@@ -1,0 +1,39 @@
+{
+  "agent_name": "Planner Manager Agent",
+  "agent_id": "69a212acff9f5d1338ea17d8",
+  "description": "Understands business problems, generates step-by-step action plans, coordinates sub-agents, and aggregates all outputs into unified result",
+  "agent_type": "json",
+  "accessor": "result",
+  "auto_generated": true,
+  "response_schema": {
+    "problem_understanding": "string",
+    "action_plan": [
+      {
+        "step_number": "number",
+        "action": "string",
+        "assigned_to": "string",
+        "status": "string"
+      }
+    ],
+    "analysis_results": "string",
+    "execution_results": "string",
+    "verification_results": "string",
+    "overall_summary": "string"
+  },
+  "example_response": {
+    "problem_understanding": "sample string",
+    "action_plan": [
+      {
+        "step_number": 1,
+        "action": "Analyze sales data",
+        "assigned_to": "Data Analyst",
+        "status": "completed"
+      }
+    ],
+    "analysis_results": "sample string",
+    "execution_results": "sample string",
+    "verification_results": "sample string",
+    "overall_summary": "sample string"
+  },
+  "has_module_outputs": false
+}

@@ -1,0 +1,54 @@
+{
+  "agent_name": "Data Analyst Agent",
+  "agent_id": "69a2126595336657ed1977da",
+  "description": "Analyzes uploaded datasets to generate trend analysis, comparisons, anomaly detection, and customer segmentation; produces chart specifications with plain-language explanations",
+  "agent_type": "json",
+  "accessor": "result",
+  "auto_generated": true,
+  "response_schema": {
+    "analysis_summary": "string",
+    "charts": [
+      {
+        "chartType": "string",
+        "chartTitle": "string",
+        "xAxisLabel": "string",
+        "yAxisLabel": "string",
+        "dataPoints": [
+          {
+            "label": "string",
+            "value": "number"
+          }
+        ],
+        "explanation": "string"
+      }
+    ],
+    "recommendations": ["string"],
+    "key_findings": ["string"]
+  },
+  "example_response": {
+    "analysis_summary": "sample string",
+    "charts": [
+      {
+        "chartType": "bar",
+        "chartTitle": "Monthly Sales",
+        "xAxisLabel": "Month",
+        "yAxisLabel": "Revenue",
+        "dataPoints": [
+          { "label": "Jan", "value": 1000 },
+          { "label": "Feb", "value": 1200 }
+        ],
+        "explanation": "sample string"
+      }
+    ],
+    "recommendations": ["sample string"],
+    "key_findings": ["sample string"]
+  },
+  "has_module_outputs": true,
+  "module_outputs_example": {
+    "artifact_files": [
+      {
+        "file_url": "https://example.com/file.json"
+      }
+    ]
+  }
+}

@@ -1,0 +1,46 @@
+{
+  "agent_name": "Execution Agent IR",
+  "agent_id": "69a2129123280dbe33411599",
+  "description": "Executes the exact actions planned by the Planner — sends emails via Gmail, generates report text, creates campaign messages",
+  "agent_type": "json",
+  "accessor": "result",
+  "auto_generated": true,
+  "response_schema": {
+    "execution_summary": "string",
+    "actions_performed": [
+      {
+        "action_type": "string",
+        "description": "string",
+        "status": "string",
+        "details": "string"
+      }
+    ],
+    "total_emails_sent": "number",
+    "total_reports_generated": "number",
+    "total_campaigns_created": "number",
+    "failures": ["string"]
+  },
+  "example_response": {
+    "execution_summary": "sample string",
+    "actions_performed": [
+      {
+        "action_type": "email",
+        "description": "sample string",
+        "status": "success",
+        "details": "sample string"
+      }
+    ],
+    "total_emails_sent": 5,
+    "total_reports_generated": 1,
+    "total_campaigns_created": 0,
+    "failures": []
+  },
+  "has_module_outputs": true,
+  "module_outputs_example": {
+    "artifact_files": [
+      {
+        "file_url": "https://example.com/report.pdf"
+      }
+    ]
+  }
+}

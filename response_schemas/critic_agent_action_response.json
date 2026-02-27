@@ -1,0 +1,37 @@
+{
+  "agent_name": "Critic Agent Action",
+  "agent_id": "69a21292affa763185fc388d",
+  "description": "Verifies execution results from the Action Executor flow, detects failures, retries, and confirms completion",
+  "agent_type": "json",
+  "accessor": "result",
+  "auto_generated": true,
+  "response_schema": {
+    "verification_summary": "string",
+    "overall_status": "string",
+    "success_rate": "string",
+    "verified_actions": [
+      {
+        "action_name": "string",
+        "status": "string",
+        "details": "string"
+      }
+    ],
+    "issues_detected": ["string"],
+    "recommendations": ["string"]
+  },
+  "example_response": {
+    "verification_summary": "sample string",
+    "overall_status": "success",
+    "success_rate": "100%",
+    "verified_actions": [
+      {
+        "action_name": "email_send",
+        "status": "verified",
+        "details": "sample string"
+      }
+    ],
+    "issues_detected": [],
+    "recommendations": ["sample string"]
+  },
+  "has_module_outputs": false
+}

@@ -1,0 +1,42 @@
+{
+  "agent_name": "Action Executor Manager",
+  "agent_id": "69a212aded4784a27a366c70",
+  "description": "Receives direct action requests from user, coordinates Execution and Critic sub-agents to perform and verify the requested actions without a planning phase",
+  "agent_type": "json",
+  "accessor": "result",
+  "auto_generated": true,
+  "response_schema": {
+    "action_understanding": "string",
+    "execution_results": "string",
+    "verification_results": "string",
+    "overall_summary": "string",
+    "actions_completed": [
+      {
+        "action_type": "string",
+        "status": "string",
+        "count": "number"
+      }
+    ]
+  },
+  "example_response": {
+    "action_understanding": "sample string",
+    "execution_results": "sample string",
+    "verification_results": "sample string",
+    "overall_summary": "sample string",
+    "actions_completed": [
+      {
+        "action_type": "sample string",
+        "status": "sample string",
+        "count": 0
+      }
+    ]
+  },
+  "has_module_outputs": true,
+  "module_outputs_example": {
+    "artifact_files": [
+      {
+        "file_url": "https://example.com/file.pdf"
+      }
+    ]
+  }
+}

@@ -1,0 +1,141 @@
+{
+  "app_name": "BIZAGENT AI - Autonomous Business Assistant",
+  "agents": {
+    "data_analyst": {
+      "agent_id": "69a2126595336657ed1977da",
+      "name": "Data Analyst Agent",
+      "role": "Business Data Analyst",
+      "type": "sub-agent",
+      "parent_manager": "planner_manager",
+      "model": "gpt-4.1",
+      "temperature": 0.3,
+      "top_p": 1,
+      "file_output": true,
+      "gmail_tool": false,
+      "image_output_config": null,
+      "voice_config": null,
+      "response_schema_file": "response_schemas/data_analyst_agent_response.json"
+    },
+    "execution_ir": {
+      "agent_id": "69a2129123280dbe33411599",
+      "name": "Execution Agent IR",
+      "role": "Business Action Executor",
+      "type": "sub-agent",
+      "parent_manager": "planner_manager",
+      "model": "gpt-4.1",
+      "temperature": 0.2,
+      "top_p": 1,
+      "file_output": true,
+      "gmail_tool": true,
+      "image_output_config": null,
+      "voice_config": null,
+      "response_schema_file": "response_schemas/execution_agent_ir_response.json"
+    },
+    "critic_ir": {
+      "agent_id": "69a2129123280dbe3341159b",
+      "name": "Critic Agent IR",
+      "role": "Quality Assurance Verifier",
+      "type": "sub-agent",
+      "parent_manager": "planner_manager",
+      "model": "gpt-4.1",
+      "temperature": 0.2,
+      "top_p": 1,
+      "file_output": false,
+      "gmail_tool": false,
+      "image_output_config": null,
+      "voice_config": null,
+      "response_schema_file": "response_schemas/critic_agent_ir_response.json"
+    },
+    "planner_manager": {
+      "agent_id": "69a212acff9f5d1338ea17d8",
+      "name": "Planner Manager Agent",
+      "role": "Business Strategy Planner and Coordinator",
+      "type": "manager",
+      "model": "gpt-4.1",
+      "temperature": 0.4,
+      "top_p": 0.95,
+      "file_output": false,
+      "gmail_tool": false,
+      "image_output_config": null,
+      "voice_config": null,
+      "managed_agents": [
+        "69a2126595336657ed1977da",
+        "69a2129123280dbe33411599",
+        "69a2129123280dbe3341159b"
+      ],
+      "response_schema_file": "response_schemas/planner_manager_agent_response.json"
+    },
+    "execution_action": {
+      "agent_id": "69a21291ed4784a27a366c6e",
+      "name": "Execution Agent Action",
+      "role": "Direct Action Executor",
+      "type": "sub-agent",
+      "parent_manager": "action_manager",
+      "model": "gpt-4.1",
+      "temperature": 0.2,
+      "top_p": 1,
+      "file_output": true,
+      "gmail_tool": true,
+      "image_output_config": null,
+      "voice_config": null,
+      "response_schema_file": "response_schemas/execution_agent_action_response.json"
+    },
+    "critic_action": {
+      "agent_id": "69a21292affa763185fc388d",
+      "name": "Critic Agent Action",
+      "role": "Action Verification Specialist",
+      "type": "sub-agent",
+      "parent_manager": "action_manager",
+      "model": "gpt-4.1",
+      "temperature": 0.2,
+      "top_p": 1,
+      "file_output": false,
+      "gmail_tool": false,
+      "image_output_config": null,
+      "voice_config": null,
+      "response_schema_file": "response_schemas/critic_agent_action_response.json"
+    },
+    "action_manager": {
+      "agent_id": "69a212aded4784a27a366c70",
+      "name": "Action Executor Manager",
+      "role": "Direct Action Coordinator",
+      "type": "manager",
+      "model": "gpt-4.1",
+      "temperature": 0.3,
+      "top_p": 0.95,
+      "file_output": false,
+      "gmail_tool": false,
+      "image_output_config": null,
+      "voice_config": null,
+      "managed_agents": [
+        "69a21291ed4784a27a366c6e",
+        "69a21292affa763185fc388d"
+      ],
+      "response_schema_file": "response_schemas/action_executor_manager_response.json"
+    }
+  },
+  "workflow": {
+    "nodes": [
+      {"id": "input_node", "type": "Input", "label": "User Input", "nodeCategory": "input"},
+      {"id": "planner_manager", "type": "Agent", "label": "Planner Manager Agent", "nodeCategory": "agent"},
+      {"id": "data_analyst", "type": "Agent", "label": "Data Analyst Agent", "nodeCategory": "agent"},
+      {"id": "execution_ir", "type": "Agent", "label": "Execution Agent (IR)", "nodeCategory": "agent"},
+      {"id": "critic_ir", "type": "Agent", "label": "Critic Agent (IR)", "nodeCategory": "agent"},
+      {"id": "action_manager", "type": "Agent", "label": "Action Executor Manager", "nodeCategory": "agent"},
+      {"id": "execution_action", "type": "Agent", "label": "Execution Agent (Action)", "nodeCategory": "agent"},
+      {"id": "critic_action", "type": "Agent", "label": "Critic Agent (Action)", "nodeCategory": "agent"},
+      {"id": "output_node", "type": "Output", "label": "Output", "nodeCategory": "end"}
+    ],
+    "edges": [
+      {"source": "input_node", "target": "planner_manager"},
+      {"source": "planner_manager", "target": "data_analyst"},
+      {"source": "planner_manager", "target": "execution_ir"},
+      {"source": "planner_manager", "target": "critic_ir"},
+      {"source": "input_node", "target": "action_manager"},
+      {"source": "action_manager", "target": "execution_action"},
+      {"source": "action_manager", "target": "critic_action"},
+      {"source": "planner_manager", "target": "output_node"},
+      {"source": "action_manager", "target": "output_node"}
+    ]
+  }
+}
