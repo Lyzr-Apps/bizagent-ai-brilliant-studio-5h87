@@ -208,13 +208,23 @@ Execute the requested action immediately. If email parameters are specified abov
         onHistoryAdd({
           id: Date.now().toString(),
           type: 'action',
-          title: text.substring(0, 80),
+          title: rawText.substring(0, 80),
           summary: parsed?.overall_summary || parsed?.action_understanding || 'Action executed',
           timestamp: new Date().toISOString(),
           details: parsed,
         })
       } else {
-        setError(agentResult?.error || 'Failed to execute your action. Please try again.')
+        // Show detailed error including tool_auth info
+        const errorMsg = agentResult?.error || 'Failed to execute your action.'
+        const rawResp = agentResult?.raw_response || ''
+        const isToolAuth = errorMsg.includes('tool_auth') || errorMsg.includes('authentication') || rawResp.includes?.('tool_auth')
+        setError(isToolAuth
+          ? 'Gmail authentication required. The Gmail tool needs to be authenticated in Lyzr Studio before emails can be sent. Please contact your administrator.'
+          : errorMsg
+        )
+        // Still show partial results if available
+        const parsed = safeParseResult(agentResult)
+        if (parsed) setResult(parsed)
       }
     } catch (err: any) {
       clearInterval(pipelineTimerRef.current)

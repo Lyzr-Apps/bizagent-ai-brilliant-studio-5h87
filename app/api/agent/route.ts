@@ -281,10 +281,18 @@ async function pollTask(task_id: string) {
   let moduleOutputs: ModuleOutputs | undefined
   let agentResponseRaw: any = rawText
 
+  // Check for module_outputs at task level first (Lyzr standard)
+  if (task.module_outputs) {
+    moduleOutputs = task.module_outputs
+  }
+
   try {
     const envelope = JSON.parse(rawText)
     if (envelope && typeof envelope === 'object' && 'response' in envelope) {
-      moduleOutputs = envelope.module_outputs
+      // Also check envelope level module_outputs
+      if (!moduleOutputs && envelope.module_outputs) {
+        moduleOutputs = envelope.module_outputs
+      }
       agentResponseRaw = envelope.response
     }
   } catch {
@@ -300,12 +308,17 @@ async function pollTask(task_id: string) {
 
   const normalized = normalizeResponse(toNormalize)
 
+  // Check if the response contains tool_auth errors (Gmail auth needed)
+  const rawStr = typeof rawText === 'string' ? rawText : JSON.stringify(rawText)
+  const hasToolAuth = rawStr.includes('tool_auth')
+
   return NextResponse.json({
-    success: true,
-    status: 'completed',
+    success: !hasToolAuth,
+    status: hasToolAuth ? 'tool_auth_required' : 'completed',
     response: normalized,
     module_outputs: moduleOutputs,
     timestamp: new Date().toISOString(),
     raw_response: rawText,
+    ...(hasToolAuth ? { error: 'Gmail authentication required. Please authenticate Gmail in Lyzr Studio first.' } : {}),
   })
 }

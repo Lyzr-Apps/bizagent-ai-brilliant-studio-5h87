@@ -213,13 +213,23 @@ Please analyze this business problem thoroughly, create an actionable plan, and 
         onHistoryAdd({
           id: Date.now().toString(),
           type: 'issue',
-          title: text.substring(0, 80),
+          title: rawText.substring(0, 80),
           summary: parsed?.overall_summary || parsed?.problem_understanding || 'Problem resolved',
           timestamp: new Date().toISOString(),
           details: parsed,
         })
       } else {
-        setError(agentResult?.error || 'Failed to process your request. Please try again.')
+        // Show detailed error including tool_auth info
+        const errorMsg = agentResult?.error || 'Failed to process your request.'
+        const rawResp = agentResult?.raw_response || ''
+        const isToolAuth = errorMsg.includes('tool_auth') || errorMsg.includes('authentication') || rawResp.includes?.('tool_auth')
+        setError(isToolAuth
+          ? 'Gmail authentication required. The Gmail tool needs to be authenticated in Lyzr Studio before emails can be sent. Please contact your administrator.'
+          : errorMsg
+        )
+        // Still show partial results if available
+        const parsed = safeParseResult(agentResult)
+        if (parsed) setResult(parsed)
       }
     } catch (err: any) {
       clearInterval(pipelineTimerRef.current)
