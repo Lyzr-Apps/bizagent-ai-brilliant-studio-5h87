@@ -11,8 +11,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { Input } from '@/components/ui/input'
 import { callAIAgent, uploadFiles } from '@/lib/aiAgent'
-import { FiUpload, FiMic, FiMicOff, FiZap, FiFile, FiX, FiCheck, FiLoader, FiDownload, FiAlertCircle, FiCheckCircle } from 'react-icons/fi'
+import { FiUpload, FiMic, FiMicOff, FiZap, FiFile, FiX, FiCheck, FiLoader, FiDownload, FiAlertCircle, FiCheckCircle, FiMail, FiPlus } from 'react-icons/fi'
 
 const ACTION_EXECUTOR_MANAGER_ID = '69a212aded4784a27a366c70'
 
@@ -32,6 +33,7 @@ interface ActionResponse {
 
 interface ActionExecutorProps {
   language: string
+  user: any
   onHistoryAdd: (item: any) => void
 }
 
@@ -74,7 +76,7 @@ function formatInline(text: string) {
   return parts.map((part, i) => i % 2 === 1 ? <strong key={i} className="font-semibold">{part}</strong> : part)
 }
 
-export default function ActionExecutorPage({ language, onHistoryAdd }: ActionExecutorProps) {
+export default function ActionExecutorPage({ language, user, onHistoryAdd }: ActionExecutorProps) {
   const [description, setDescription] = useState('')
   const [files, setFiles] = useState<File[]>([])
   const [loading, setLoading] = useState(false)
@@ -85,9 +87,45 @@ export default function ActionExecutorPage({ language, onHistoryAdd }: ActionExe
   const [isListening, setIsListening] = useState(false)
   const [showSample, setShowSample] = useState(false)
   const [uploadStatus, setUploadStatus] = useState('')
+  const [recipientEmails, setRecipientEmails] = useState('')
+  const [emailSubject, setEmailSubject] = useState('')
+  const [emailBody, setEmailBody] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
   const recognitionRef = useRef<any>(null)
   const pipelineTimerRef = useRef<any>(null)
+
+  // Build structured message with business context + explicit email params
+  const buildAgentMessage = (userText: string): string => {
+    const businessCtx = user ? `
+--- BUSINESS CONTEXT ---
+Business Name: ${user.businessName || 'N/A'}
+Business Type: ${user.businessType || 'N/A'}
+Owner Name: ${user.ownerName || 'N/A'}
+Business Email: ${user.email || 'N/A'}
+Support Email: ${user.supportEmail || user.email || 'N/A'}
+Business Phone: ${user.contactNumber || user.phone || 'N/A'}
+Business Address: ${user.businessAddress || 'N/A'}
+--- END BUSINESS CONTEXT ---` : ''
+
+    const emailCtx = recipientEmails.trim() ? `
+--- EMAIL EXECUTION PARAMETERS ---
+Action Required: Send emails via Gmail using GMAIL_SEND_EMAIL tool
+Recipient Email(s): ${recipientEmails.trim()}
+Email Subject: ${emailSubject.trim() || 'Auto-generate appropriate subject from the action description'}
+${emailBody.trim() ? `Email Body Content: ${emailBody.trim()}` : 'Email Body: Generate professional email content based on the action description and business context above.'}
+Sender Business: ${user?.businessName || 'Business'}
+Sender Name: ${user?.ownerName || 'Business Owner'}
+CRITICAL INSTRUCTION: You MUST use the GMAIL_SEND_EMAIL tool to actually send an email to EACH recipient listed above. Do NOT simulate or skip sending. Execute the real Gmail send action for each recipient email address. The email should be professionally formatted with the business branding.
+--- END EMAIL PARAMETERS ---` : ''
+
+    return `${businessCtx}
+
+USER ACTION REQUEST: ${userText}
+
+${emailCtx}
+
+Execute the requested action immediately. If email parameters are specified above, you MUST send real emails using the GMAIL_SEND_EMAIL tool. Report the exact status of each action performed.`
+  }
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selected = Array.from(e.target.files || [])
@@ -128,8 +166,11 @@ export default function ActionExecutorPage({ language, onHistoryAdd }: ActionExe
   }
 
   const handleExecute = async () => {
-    const text = showSample && !description ? SAMPLE_COMMAND : description
-    if (!text.trim()) { setError('Please describe the action to execute.'); return }
+    const rawText = showSample && !description ? SAMPLE_COMMAND : description
+    if (!rawText.trim()) { setError('Please describe the action to execute.'); return }
+    if (recipientEmails.trim() && !recipientEmails.includes('@')) {
+      setError('Please enter valid email address(es) for recipients.'); return
+    }
     setError('')
     setResult(null)
     setArtifactFiles([])
@@ -153,7 +194,8 @@ export default function ActionExecutorPage({ language, onHistoryAdd }: ActionExe
         setUploadStatus('')
       }
 
-      const agentResult = await callAIAgent(text, ACTION_EXECUTOR_MANAGER_ID, assetIds.length > 0 ? { assets: assetIds } : undefined)
+      const enrichedMessage = buildAgentMessage(rawText)
+      const agentResult = await callAIAgent(enrichedMessage, ACTION_EXECUTOR_MANAGER_ID, assetIds.length > 0 ? { assets: assetIds } : undefined)
       clearInterval(pipelineTimerRef.current)
       setPipelineStep(2) // All complete
 
@@ -260,6 +302,45 @@ export default function ActionExecutorPage({ language, onHistoryAdd }: ActionExe
               </button>
             </div>
             {isListening && <p className="text-xs text-red-500 mt-1.5 animate-pulse">Listening... Speak now</p>}
+
+            {/* Email Parameters Section */}
+            <div className="mt-3 border border-amber-200/60 rounded-xl p-3 bg-amber-50/20">
+              <div className="flex items-center gap-2 mb-2">
+                <FiMail className="w-4 h-4 text-amber-600" />
+                <span className="text-sm font-medium">Email Parameters</span>
+                <span className="text-[10px] text-muted-foreground">(required for email actions)</span>
+              </div>
+              <div className="space-y-2.5">
+                <div className="space-y-1">
+                  <Label className="text-xs font-medium text-muted-foreground">Recipient Email(s) *</Label>
+                  <Input
+                    placeholder="e.g. client@company.com, team@org.com"
+                    className="text-sm h-9"
+                    value={recipientEmails}
+                    onChange={e => setRecipientEmails(e.target.value)}
+                  />
+                  <p className="text-[10px] text-muted-foreground">Separate multiple emails with commas</p>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs font-medium text-muted-foreground">Email Subject</Label>
+                  <Input
+                    placeholder="Auto-generated if left blank"
+                    className="text-sm h-9"
+                    value={emailSubject}
+                    onChange={e => setEmailSubject(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs font-medium text-muted-foreground">Email Body (optional)</Label>
+                  <Textarea
+                    placeholder="Leave blank for AI-generated professional content based on your action description..."
+                    className="min-h-[60px] resize-none text-sm"
+                    value={emailBody}
+                    onChange={e => setEmailBody(e.target.value)}
+                  />
+                </div>
+              </div>
+            </div>
 
             <Button
               onClick={handleExecute}

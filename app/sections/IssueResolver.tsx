@@ -11,8 +11,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
+import { Input } from '@/components/ui/input'
 import { callAIAgent, uploadFiles } from '@/lib/aiAgent'
-import { FiUpload, FiMic, FiMicOff, FiSearch, FiFile, FiX, FiChevronDown, FiChevronUp, FiCheck, FiLoader, FiDownload, FiAlertCircle, FiCheckCircle } from 'react-icons/fi'
+import { FiUpload, FiMic, FiMicOff, FiSearch, FiFile, FiX, FiChevronDown, FiChevronUp, FiCheck, FiLoader, FiDownload, FiAlertCircle, FiCheckCircle, FiMail, FiPlus } from 'react-icons/fi'
 
 const PLANNER_MANAGER_ID = '69a212acff9f5d1338ea17d8'
 
@@ -34,6 +35,7 @@ interface PlannerResponse {
 
 interface IssueResolverProps {
   language: string
+  user: any
   onHistoryAdd: (item: any) => void
 }
 
@@ -78,7 +80,7 @@ function formatInline(text: string) {
   return parts.map((part, i) => i % 2 === 1 ? <strong key={i} className="font-semibold">{part}</strong> : part)
 }
 
-export default function IssueResolverPage({ language, onHistoryAdd }: IssueResolverProps) {
+export default function IssueResolverPage({ language, user, onHistoryAdd }: IssueResolverProps) {
   const [description, setDescription] = useState('')
   const [files, setFiles] = useState<File[]>([])
   const [loading, setLoading] = useState(false)
@@ -89,9 +91,44 @@ export default function IssueResolverPage({ language, onHistoryAdd }: IssueResol
   const [isListening, setIsListening] = useState(false)
   const [showSample, setShowSample] = useState(false)
   const [uploadStatus, setUploadStatus] = useState('')
+  const [showEmailFields, setShowEmailFields] = useState(false)
+  const [recipientEmails, setRecipientEmails] = useState('')
+  const [emailSubject, setEmailSubject] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
   const recognitionRef = useRef<any>(null)
   const pipelineTimerRef = useRef<any>(null)
+
+  // Build structured message with business context + email params
+  const buildAgentMessage = (userText: string): string => {
+    const businessCtx = user ? `
+--- BUSINESS CONTEXT ---
+Business Name: ${user.businessName || 'N/A'}
+Business Type: ${user.businessType || 'N/A'}
+Owner Name: ${user.ownerName || 'N/A'}
+Business Email: ${user.email || 'N/A'}
+Support Email: ${user.supportEmail || user.email || 'N/A'}
+Business Phone: ${user.contactNumber || user.phone || 'N/A'}
+Business Address: ${user.businessAddress || 'N/A'}
+--- END BUSINESS CONTEXT ---` : ''
+
+    const emailCtx = showEmailFields && recipientEmails.trim() ? `
+--- EMAIL EXECUTION PARAMETERS ---
+Action Required: Send emails via Gmail
+Recipient Email(s): ${recipientEmails.trim()}
+Email Subject: ${emailSubject.trim() || 'Auto-generate appropriate subject based on problem context'}
+Sender Business: ${user?.businessName || 'Business'}
+Sender Email Context: Use the authenticated Gmail account to send the email.
+IMPORTANT: You MUST actually send the email using the GMAIL_SEND_EMAIL tool to each recipient listed above. Do not simulate - execute the real send action.
+--- END EMAIL PARAMETERS ---` : ''
+
+    return `${businessCtx}
+
+${userText}
+
+${emailCtx}
+
+Please analyze this business problem thoroughly, create an actionable plan, and if email parameters are provided above, actually send the emails using the Gmail tool. Provide detailed analysis with specific data-driven insights and actionable recommendations.`
+  }
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selected = Array.from(e.target.files || [])
@@ -132,8 +169,11 @@ export default function IssueResolverPage({ language, onHistoryAdd }: IssueResol
   }
 
   const handleSolve = async () => {
-    const text = showSample && !description ? SAMPLE_DESCRIPTION : description
-    if (!text.trim()) { setError('Please describe your problem.'); return }
+    const rawText = showSample && !description ? SAMPLE_DESCRIPTION : description
+    if (!rawText.trim()) { setError('Please describe your problem.'); return }
+    if (showEmailFields && recipientEmails.trim() && !recipientEmails.includes('@')) {
+      setError('Please enter valid email address(es) for recipients.'); return
+    }
     setError('')
     setResult(null)
     setArtifactFiles([])
@@ -158,7 +198,8 @@ export default function IssueResolverPage({ language, onHistoryAdd }: IssueResol
         setUploadStatus('')
       }
 
-      const agentResult = await callAIAgent(text, PLANNER_MANAGER_ID, assetIds.length > 0 ? { assets: assetIds } : undefined)
+      const enrichedMessage = buildAgentMessage(rawText)
+      const agentResult = await callAIAgent(enrichedMessage, PLANNER_MANAGER_ID, assetIds.length > 0 ? { assets: assetIds } : undefined)
       clearInterval(pipelineTimerRef.current)
       setPipelineStep(4) // All complete
 
@@ -266,6 +307,43 @@ export default function IssueResolverPage({ language, onHistoryAdd }: IssueResol
               </button>
             </div>
             {isListening && <p className="text-xs text-red-500 mt-1.5 animate-pulse">Listening... Speak now</p>}
+
+            {/* Email Action Toggle */}
+            <div className="mt-3 border border-border/50 rounded-xl p-3 bg-muted/20">
+              <button
+                type="button"
+                onClick={() => setShowEmailFields(!showEmailFields)}
+                className="flex items-center gap-2 text-sm font-medium text-foreground w-full"
+              >
+                <FiMail className="w-4 h-4 text-emerald-600" />
+                <span>Include Email Action</span>
+                <span className="text-[10px] text-muted-foreground ml-1">(optional - specify recipients to send emails)</span>
+                {showEmailFields ? <FiChevronUp className="w-4 h-4 ml-auto" /> : <FiChevronDown className="w-4 h-4 ml-auto" />}
+              </button>
+              {showEmailFields && (
+                <div className="mt-3 space-y-2.5">
+                  <div className="space-y-1">
+                    <Label className="text-xs font-medium text-muted-foreground">Recipient Email(s)</Label>
+                    <Input
+                      placeholder="e.g. customer1@email.com, customer2@email.com"
+                      className="text-sm h-9"
+                      value={recipientEmails}
+                      onChange={e => setRecipientEmails(e.target.value)}
+                    />
+                    <p className="text-[10px] text-muted-foreground">Separate multiple emails with commas</p>
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs font-medium text-muted-foreground">Email Subject (optional)</Label>
+                    <Input
+                      placeholder="Auto-generated if left blank"
+                      className="text-sm h-9"
+                      value={emailSubject}
+                      onChange={e => setEmailSubject(e.target.value)}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
 
             <Button
               onClick={handleSolve}

@@ -281,10 +281,10 @@ export default function Page() {
               <DashboardPage onNavigate={handleNavigate} user={user} />
             )}
             {currentPage === 'issue-resolver' && (
-              <IssueResolverPage language={language} onHistoryAdd={handleHistoryAdd} />
+              <IssueResolverPage language={language} user={user} onHistoryAdd={handleHistoryAdd} />
             )}
             {currentPage === 'action-executor' && (
-              <ActionExecutorPage language={language} onHistoryAdd={handleHistoryAdd} />
+              <ActionExecutorPage language={language} user={user} onHistoryAdd={handleHistoryAdd} />
             )}
             {currentPage === 'history' && (
               <HistoryPage onNavigate={handleNavigate} />
